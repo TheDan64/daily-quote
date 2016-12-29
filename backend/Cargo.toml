@@ -1,0 +1,11 @@
+[package]
+name = "quote-storage"
+version = "0.1.0"
+authors = ["thadan64@gmail.com"]
+license = "Apache-2.0"
+repository = "https://github.com/TheDan64/daily-quote"
+
+[dependencies]
+diesel = "0.9.1"
+diesel_codegen = { version = "0.9.0", default-features = false, features = ["dotenv", "postgres"] }
+dotenv = "0.8.0"
