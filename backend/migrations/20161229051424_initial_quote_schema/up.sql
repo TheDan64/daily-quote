@@ -1,0 +1,11 @@
+CREATE TABLE author(
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    note TEXT NOT NULL
+);
+CREATE TABLE quote(
+    id BIGSERIAL PRIMARY KEY,
+    author_id BIGINT REFERENCES author (id) NOT NULL,
+    note TEXT NOT NULL,
+    sent BOOLEAN NOT NULL
+);

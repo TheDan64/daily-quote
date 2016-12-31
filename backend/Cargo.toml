@@ -8,4 +8,7 @@ repository = "https://github.com/TheDan64/daily-quote"
 [dependencies]
 diesel = "0.9.1"
 diesel_codegen = { version = "0.9.0", default-features = false, features = ["dotenv", "postgres"] }
+docopt = "0.6"
+rustc-serialize = "0.3.22"
+docopt_macros = "0.6.88"
 dotenv = "0.8.0"
