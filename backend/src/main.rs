@@ -5,6 +5,8 @@
 #[macro_use] extern crate diesel_codegen;
 extern crate docopt;
 extern crate dotenv;
+#[macro_use] extern crate lazy_static;
+extern crate regex;
 extern crate rustc_serialize;
 
 pub mod database;
@@ -15,8 +17,9 @@ pub mod quotes;
 use self::database::{establish_connection};
 use self::quotes::{retrieve_quote, store_quotes};
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::{BufReader, BufRead};
 use std::path::Path;
+use diesel::connection::Connection;
 
 docopt!(Args derive Debug, "
 Quote Storage & Retrieval Utilities
@@ -50,6 +53,8 @@ fn main() {
 
     let conn = establish_connection();
 
+    conn.begin_test_transaction().unwrap(); // TMP
+
     if args.cmd_store {
         let path = Path::new(&args.arg_file);
         let file = match File::open(&path) {
@@ -57,7 +62,7 @@ fn main() {
             Err(e) => panic!("FIXME: Invalid file reference found :'( {}", e)
         };
 
-        store_quotes(conn, readable_to_string(BufReader::new(file)));
+        store_quotes(conn, quotes_from_buffered_reader(BufReader::new(file)));
     } else if args.cmd_retrieve {
         // let quote = retrieve_quote(conn, args);
 
@@ -66,12 +71,6 @@ fn main() {
     }
 }
 
-fn readable_to_string<R: Read>(mut readable: R) -> String {
-    let mut input_string = String::new();
-
-    if let Err(e) = readable.read_to_string(&mut input_string) {
-        panic!("Failed to read input: {}", e);
-    }
-
-    input_string
+fn quotes_from_buffered_reader<B: BufRead>(bufreader: B) -> Vec<String> {
+    bufreader.lines().map(|l| l.expect("Could not parse line")).collect()
 }
