@@ -51,9 +51,9 @@ fn main() {
         return println!("quote_storage v{}", version);
     }
 
-    let conn = establish_connection();
+    let dbsession = establish_connection();
 
-    conn.begin_test_transaction().unwrap(); // TMP
+    dbsession.begin_test_transaction().unwrap(); // TMP
 
     if args.cmd_store {
         let path = Path::new(&args.arg_file);
@@ -62,9 +62,9 @@ fn main() {
             Err(e) => panic!("FIXME: Invalid file reference found :'( {}", e)
         };
 
-        store_quotes(conn, quotes_from_buffered_reader(BufReader::new(file)));
+        store_quotes(dbsession, &quotes_from_buffered_reader(BufReader::new(file)), args.flag_mark_retrieved);
     } else if args.cmd_retrieve {
-        // let quote = retrieve_quote(conn, args);
+        // let quote = retrieve_quote(dbsession, args);
 
     } else {
         unreachable!("Should not be able to get here!")

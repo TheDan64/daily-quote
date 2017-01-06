@@ -6,6 +6,7 @@ CREATE TABLE author(
 CREATE TABLE quote(
     id BIGSERIAL PRIMARY KEY,
     author_id BIGINT REFERENCES author (id) NOT NULL,
+    text TEXT NOT NULL,
     note TEXT NOT NULL,
-    sent BOOLEAN NOT NULL
+    retrieved BOOLEAN NOT NULL
 );

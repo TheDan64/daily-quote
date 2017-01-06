@@ -11,8 +11,9 @@ pub struct Author {
 pub struct Quote {
     pub id: i64,
     pub author_id: i64,
+    pub text: String,
     pub note: String,
-    pub sent: bool,
+    pub retrieved: bool,
 }
 
 #[derive(Insertable)]
@@ -26,6 +27,7 @@ pub struct NewAuthor<'a> {
 #[table_name="quote"]
 pub struct NewQuote<'a> {
     pub author_id: i64,
+    pub text: &'a str,
     pub note: &'a str,
-    pub sent: bool,
+    pub retrieved: bool,
 }
