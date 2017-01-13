@@ -1,8 +1,12 @@
-use diesel::expression::dsl::all;
-use diesel::insert;
+use diesel::expression::count::*;
+use diesel::expression::dsl::{any, count};
+use diesel::{insert, update};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use models::{Author, NewAuthor, NewQuote};
+use diesel::JoinTo;
+use models::{Author, NewAuthor, NewQuote, Quote};
+use rand::distributions::{IndependentSample, Range};
+use rand::thread_rng;
 use regex::Regex;
 use schema::author::table as author_table;
 use schema::quote::table as quote_table;
@@ -51,7 +55,7 @@ pub fn store_quotes<'a>(dbsession: PgConnection, quotes: &'a Vec<String>, mark_r
         new_quote_count += 1;
     }
 
-    let existing_authors: Vec<(String, _)> = author.filter(name.eq(all(Vec::from_iter(author_names))))
+    let existing_authors: Vec<(String, _)> = author.filter(name.eq(any(Vec::from_iter(author_names))))
                                                    .select((name, id))
                                                    .load(&dbsession)
                                                    .expect("Error loading authors");
@@ -122,6 +126,120 @@ pub fn store_quotes<'a>(dbsession: PgConnection, quotes: &'a Vec<String>, mark_r
     println!("Created {} new authors and {} new quotes", new_author_count, new_quote_count);
 }
 
-pub fn retrieve_quote(dbsession: PgConnection) {
+pub enum RetrievalRequest {
+    Random,
+    RandomRetrieved,
+    RandomUnretrievedAndMark(bool),
+    IdAndMark(i64, bool),
+}
 
+pub fn retrieve_quote(dbsession: PgConnection, request: RetrievalRequest) -> String {
+    use schema::author::dsl::author;
+    use schema::quote::dsl::{quote, id as quote_id, retrieved};
+
+    let mut rng = thread_rng();
+
+    let (quote_dbo, author_dbo) = match request {
+        RetrievalRequest::Random => {
+            let count: i64 = quote.count()
+                                  .first(&dbsession)
+                                  .expect("Unable to count quotes in the database");
+
+            let random_quote_id = Range::new(1, count + 1).ind_sample(&mut rng);
+
+            quote_table.inner_join(author_table)
+                       .filter(quote_id.eq(random_quote_id))
+                       .first(&dbsession)
+                       .expect("Could not retrieve quote")
+        },
+        RetrievalRequest::RandomRetrieved => {
+            let count: i64 = quote.count()
+                                  .filter(retrieved.eq(true))
+                                  .first(&dbsession)
+                                  .expect("Unable to count quotes in the database");
+
+            let offset = Range::new(0, count).ind_sample(&mut rng);
+
+            quote_table.inner_join(author_table)
+                       .filter(retrieved.eq(true))
+                       .offset(offset)
+                       .first(&dbsession)
+                       .expect("Could not retrieve quote from the database")
+        },
+        RetrievalRequest::RandomUnretrievedAndMark(mark_retrieved) => {
+            let count: i64 = quote.count()
+                                  .filter(retrieved.eq(false))
+                                  .first(&dbsession)
+                                  .expect("Unable to count quotes in the database");
+
+            if count == 0 {
+                panic!("No unretrieved quotes found in the database"); // FIXME
+            }
+
+            let offset: i64 = Range::new(0, count).ind_sample(&mut rng);
+
+            let (quote_dbo, author_dbo) = quote_table.inner_join(author_table)
+                                                     .filter(retrieved.eq(false))
+                                                     .offset(offset)
+                                                     .first(&dbsession)
+                                                     .expect("Unable to retrieve quote from the database");
+            if mark_retrieved { // TODO: Test
+                update(&quote_dbo).set(retrieved.eq(true))
+                                  .execute(&dbsession)
+                                  .expect("Unable to save changes to quote dbo");
+            }
+
+            (quote_dbo, author_dbo)
+        },
+        RetrievalRequest::IdAndMark(id, mark_retrieved) => {
+            // FIXME: Possible issue when value out of range
+            let (quote_dbo, author_dbo) = quote_table.inner_join(author_table)
+                                                     .filter(quote_id.eq(id))
+                                                     .first(&dbsession)
+                                                     .expect("Could not retrieve quote");
+
+            if mark_retrieved { // TODO: Test
+                update(&quote_dbo).set(retrieved.eq(true))
+                                  .execute(&dbsession)
+                                  .expect("Unable to save changes to quote dbo");
+            }
+
+            (quote_dbo, author_dbo)
+        }
+    };
+
+    format_quote(quote_dbo, author_dbo)
+}
+
+fn format_quote(quote: Quote, author: Author) -> String {
+    let mut quote_len = quote.text.len() + 5; // 2 quotation marks + 2 spaces + dash
+
+    if quote.note.len() > 0 {
+        quote_len += quote.note.len() + 2; // + comma + space
+    }
+
+    if author.note.len() > 0 {
+        quote_len += author.note.len() + 3; // + space + 2 brackets
+    }
+
+    let mut quote_string = String::with_capacity(quote_len);
+
+    quote_string.push('"');
+    quote_string.push_str(&quote.text);
+    quote_string.push('"');
+    quote_string.push_str(" - ");
+    quote_string.push_str(&author.name);
+
+    if author.note.len() > 0 {
+        quote_string.push_str(" [");
+        quote_string.push_str(&author.note);
+        quote_string.push(']');
+    }
+
+    if quote.note.len() > 0 {
+        quote_string.push_str(", ");
+        quote_string.push_str(&quote.note);
+    }
+
+    quote_string
 }

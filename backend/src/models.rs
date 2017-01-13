@@ -1,13 +1,17 @@
 use schema::{author, quote};
 
-#[derive(Queryable)]
+#[derive(Associations, Identifiable, Queryable)]
+#[has_many(quote)]
+#[table_name="author"]
 pub struct Author {
     pub id: i64,
     pub name: String,
     pub note: String,
 }
 
-#[derive(Queryable)]
+#[derive(Associations, Identifiable, Queryable)]
+#[belongs_to(Author)]
+#[table_name="quote"]
 pub struct Quote {
     pub id: i64,
     pub author_id: i64,
