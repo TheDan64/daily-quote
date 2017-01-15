@@ -1,9 +1,7 @@
-use diesel::expression::count::*;
-use diesel::expression::dsl::{any, count};
+use diesel::expression::dsl::any;
 use diesel::{insert, update};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use diesel::JoinTo;
 use models::{Author, NewAuthor, NewQuote, Quote};
 use rand::distributions::{IndependentSample, Range};
 use rand::thread_rng;
@@ -134,7 +132,6 @@ pub enum RetrievalRequest {
 }
 
 pub fn retrieve_quote(dbsession: PgConnection, request: RetrievalRequest) -> String {
-    use schema::author::dsl::author;
     use schema::quote::dsl::{quote, id as quote_id, retrieved};
 
     let mut rng = thread_rng();
@@ -183,7 +180,7 @@ pub fn retrieve_quote(dbsession: PgConnection, request: RetrievalRequest) -> Str
                                                      .offset(offset)
                                                      .first(&dbsession)
                                                      .expect("Unable to retrieve quote from the database");
-            if mark_retrieved { // TODO: Test
+            if mark_retrieved {
                 update(&quote_dbo).set(retrieved.eq(true))
                                   .execute(&dbsession)
                                   .expect("Unable to save changes to quote dbo");
@@ -198,7 +195,7 @@ pub fn retrieve_quote(dbsession: PgConnection, request: RetrievalRequest) -> Str
                                                      .first(&dbsession)
                                                      .expect("Could not retrieve quote");
 
-            if mark_retrieved { // TODO: Test
+            if mark_retrieved {
                 update(&quote_dbo).set(retrieved.eq(true))
                                   .execute(&dbsession)
                                   .expect("Unable to save changes to quote dbo");
