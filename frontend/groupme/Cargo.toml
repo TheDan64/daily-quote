@@ -1,0 +1,11 @@
+[package]
+name = "groupme"
+version = "0.1.0"
+authors = ["thadan64@gmail.com"]
+license = "Apache-2.0"
+repository = "https://github.com/TheDan64/daily-quote"
+
+[dependencies]
+docopt = "0.7.0"
+dotenv = "0.8.0"
+rustc-serialize = "0.3.22"

@@ -1,6 +1,0 @@
-[package]
-name = "groupme-bot"
-version = "0.1.0"
-authors = ["dkolsoi"]
-
-[dependencies]
