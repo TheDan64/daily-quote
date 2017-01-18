@@ -1,26 +1,37 @@
 extern crate docopt;
 extern crate dotenv;
+extern crate hyper;
+extern crate hyper_native_tls;
 extern crate rustc_serialize;
 
+pub mod bot;
+
 use docopt::Docopt;
+use dotenv::dotenv;
+use self::bot::send_message;
+use std::env;
+use std::io::Read;
 
 const USAGE: &'static str = "
 GroupMe Utilities
 
 Usage:
-  groupme bot
+  groupme bot send
+  groupme bot send <message>
   groupme (-h | --help)
   groupme --version
 
 Options:
-  -h --help    Show this screen.
+  -h --help     Show this screen.
 ";
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
     cmd_bot: bool,
+    cmd_send: bool,
     flag_help: bool,
     flag_version: bool,
+    arg_message: String,
 }
 
 fn main() {
@@ -33,6 +44,32 @@ fn main() {
         return println!("groupme v{}", version);
     };
 
-    println!("Hello, world!");
     println!("{:?}", args);
+
+    if !args.cmd_bot && !args.cmd_send {
+        panic!("Halp");
+    }
+
+    if args.arg_message.len() > 0 {
+        panic!("Halp2");
+    }
+
+    dotenv().ok();
+
+    let bot_id = match env::var("BOT_ID") {
+        Ok(id) => id,
+        Err(_) => panic!("Could not find config setting for `BOT_ID`")
+    };
+
+    println!("{}", send_message(bot_id, readable_to_string(std::io::stdin())));
+}
+
+fn readable_to_string<R: Read>(mut readable: R) -> String {
+    let mut input_string = String::new();
+
+    if let Err(e) = readable.read_to_string(&mut input_string) {
+        panic!("Failed to read: {}", e);
+    }
+
+    input_string
 }

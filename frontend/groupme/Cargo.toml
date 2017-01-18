@@ -8,4 +8,6 @@ repository = "https://github.com/TheDan64/daily-quote"
 [dependencies]
 docopt = "0.7.0"
 dotenv = "0.8.0"
+hyper="0.10.0"
+hyper-native-tls="*"
 rustc-serialize = "0.3.22"
