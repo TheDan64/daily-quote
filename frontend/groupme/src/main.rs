@@ -8,7 +8,7 @@ pub mod bot;
 
 use docopt::Docopt;
 use dotenv::dotenv;
-use self::bot::send_message;
+use self::bot::Bot;
 use std::env;
 use std::io::Read;
 
@@ -61,7 +61,11 @@ fn main() {
         Err(_) => panic!("Could not find config setting for `BOT_ID`")
     };
 
-    println!("{}", send_message(bot_id, readable_to_string(std::io::stdin())));
+    let bot = Bot::new(bot_id);
+
+    let success = bot.send_message(readable_to_string(std::io::stdin()));
+
+    assert!(success);
 }
 
 fn readable_to_string<R: Read>(mut readable: R) -> String {
