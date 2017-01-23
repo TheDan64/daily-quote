@@ -128,6 +128,7 @@ pub enum RetrievalRequest {
     Random,
     RandomRetrieved,
     RandomUnretrievedAndMark(bool),
+    FirstUnretrievedAndMark(bool),
     IdAndMark(i64, bool),
 }
 
@@ -178,6 +179,19 @@ pub fn retrieve_quote(dbsession: PgConnection, request: RetrievalRequest) -> Str
             let (quote_dbo, author_dbo) = quote_table.inner_join(author_table)
                                                      .filter(retrieved.eq(false))
                                                      .offset(offset)
+                                                     .first(&dbsession)
+                                                     .expect("Unable to retrieve quote from the database");
+            if mark_retrieved {
+                update(&quote_dbo).set(retrieved.eq(true))
+                                  .execute(&dbsession)
+                                  .expect("Unable to save changes to quote dbo");
+            }
+
+            (quote_dbo, author_dbo)
+        },
+        RetrievalRequest::FirstUnretrievedAndMark(mark_retrieved) => {
+            let (quote_dbo, author_dbo) = quote_table.inner_join(author_table)
+                                                     .filter(retrieved.eq(false))
                                                      .first(&dbsession)
                                                      .expect("Unable to retrieve quote from the database");
             if mark_retrieved {

@@ -27,7 +27,7 @@ Quote Storage & Retrieval Utilities
 Usage:
   quote_storage store <file> [--mark-retrieved]
   quote_storage retrieve <quote-id> [--mark-retrieved]
-  quote_storage retrieve [--random-retrieved | --random-unretrieved] [--mark-retrieved]
+  quote_storage retrieve [--random-retrieved | --random-unretrieved | --first-unretrieved] [--mark-retrieved]
   quote_storage (-h | --help)
   quote_storage --version
 
@@ -67,6 +67,8 @@ fn main() {
             RetrievalRequest::RandomRetrieved
         } else if args.flag_random_unretrieved {
             RetrievalRequest::RandomUnretrievedAndMark(args.flag_mark_retrieved)
+        } else if args.flag_first_unretrieved {
+            RetrievalRequest::FirstUnretrievedAndMark(args.flag_mark_retrieved)
         } else if args.arg_quote_id.len() > 0 {
             let id = args.arg_quote_id.parse::<i64>().unwrap(); // FIXME: Handle error gracefully
 
