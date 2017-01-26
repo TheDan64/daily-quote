@@ -10,6 +10,7 @@ extern crate rand;
 extern crate regex;
 extern crate rustc_serialize;
 
+pub mod counts;
 pub mod database;
 pub mod schema;
 pub mod models;
@@ -17,6 +18,7 @@ pub mod quotes;
 
 use self::database::{establish_connection};
 use self::quotes::{retrieve_quote, store_quotes, RetrievalRequest};
+use self::counts::{count_authors, count_quotes};
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::Path;
@@ -25,6 +27,7 @@ docopt!(Args derive Debug, "
 Quote Storage & Retrieval Utilities
 
 Usage:
+  quote_storage count [authors | unretrieved-quotes | retrieved-quotes]
   quote_storage store <file> [--mark-retrieved]
   quote_storage retrieve <quote-id> [--mark-retrieved]
   quote_storage retrieve [--random-retrieved | --random-unretrieved | --first-unretrieved] [--mark-retrieved]
@@ -44,7 +47,7 @@ fn main() {
     let args: Args = Args::docopt().decode().unwrap_or_else(|e| e.exit());
 
     if args.flag_version {
-        let version = env!{"CARGO_PKG_VERSION"};
+        let version = env!("CARGO_PKG_VERSION");
 
         return println!("quote_storage v{}", version);
     }
@@ -80,7 +83,16 @@ fn main() {
         let quote = retrieve_quote(dbsession, request);
 
         println!("{}", quote);
+    } else if args.cmd_count {
+        let count = if args.cmd_authors {
+            count_authors(dbsession)
+        } else if args.cmd_unretrieved_quotes {
+            count_quotes(dbsession, true)
+        } else {
+            count_quotes(dbsession, false)
+        };
 
+        print!("{}", count);
     } else {
         unreachable!("Should not be able to get here!")
     }
