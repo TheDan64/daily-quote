@@ -48,7 +48,7 @@ if __name__ == "__main__":
                         bucket_name=BUCKET_NAME,
                         bucket_key=BUCKET_KEY)
 
-    streamer.log("Unretrieved Quotes", retrieved_count)
+    streamer.log("Unretrieved Quotes", unretrieved_count)
     streamer.log("Retrieved Quotes", retrieved_count)
     streamer.log("Total Quotes", unretrieved_count + retrieved_count)
     streamer.log("Total Authors", author_count)
