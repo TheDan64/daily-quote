@@ -63,7 +63,9 @@ fn main() {
             Err(e) => panic!("FIXME: Invalid file reference found :'( {}", e)
         };
 
-        store_quotes(dbsession, &quotes_from_buffered_reader(BufReader::new(file)), args.flag_mark_retrieved);
+        let quotes = quotes_from_buffered_reader(BufReader::new(file));
+
+        store_quotes(dbsession, &quotes, args.flag_mark_retrieved);
 
     } else if args.cmd_retrieve {
         let request = if args.flag_random_retrieved {
