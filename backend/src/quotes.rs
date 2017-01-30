@@ -192,6 +192,7 @@ pub fn retrieve_quote(dbsession: PgConnection, request: RetrievalRequest) -> Str
         RetrievalRequest::FirstUnretrievedAndMark(mark_retrieved) => {
             let (quote_dbo, author_dbo) = quote_table.inner_join(author_table)
                                                      .filter(retrieved.eq(false))
+                                                     .order(quote_id)
                                                      .first(&dbsession)
                                                      .expect("Unable to retrieve quote from the database");
             if mark_retrieved {
