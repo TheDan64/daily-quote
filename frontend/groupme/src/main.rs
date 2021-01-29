@@ -1,12 +1,15 @@
 pub mod bot;
 
-use docopt::Docopt;
-use dotenv::dotenv;
-use self::bot::Bot;
 use std::env;
-use std::io::Read;
+use std::io::{stdin, Read};
 
-const USAGE: &'static str = "
+use anyhow::{Context, Result};
+use dotenv::dotenv;
+use structopt::StructOpt;
+
+use self::bot::Bot;
+
+const USAGE: &str = "
 GroupMe Utilities
 
 Usage:
@@ -19,55 +22,54 @@ Options:
   -h --help     Show this screen.
 ";
 
-#[derive(Debug, RustcDecodable)]
-struct Args {
-    cmd_bot: bool,
-    cmd_send: bool,
-    flag_help: bool,
-    flag_version: bool,
-    arg_message: String,
+#[derive(Debug, StructOpt)]
+enum BotCmd {
+    /// Either provide a string or else read from stdin
+    #[structopt(name = "send")]
+    Send {
+        message: Option<String>,
+    },
 }
 
-fn main() {
-    let args: Args = Docopt::new(USAGE).and_then(|d| d.decode())
-                                       .unwrap_or_else(|e| e.exit());
+#[derive(Debug, StructOpt)]
+#[structopt(name = "groupme")]
+enum Opt {
+    #[structopt(name = "bot")]
+    Bot(BotCmd),
+}
 
-    if args.flag_version {
-        let version = env!("CARGO_PKG_VERSION");
+fn main() -> Result<()> {
+    let opt = Opt::from_args();
 
-        return println!("groupme v{}", version);
-    };
+    dbg!(&opt);
 
-    println!("{:?}", args);
+    dotenv().context("Failed to init dotenv")?;
 
-    if !args.cmd_bot && !args.cmd_send {
-        panic!("Halp");
+    match opt {
+        Opt::Bot(BotCmd::Send { message }) => send_bot_message(message)?,
     }
 
-    if args.arg_message.len() > 0 {
-        panic!("Halp2");
-    }
+    Ok(())
+}
 
-    dotenv().ok();
-
-    let bot_id = match env::var("BOT_ID") {
-        Ok(id) => id,
-        Err(_) => panic!("Could not find config setting for `BOT_ID`")
-    };
-
+fn send_bot_message(message: Option<String>) -> Result<()> {
+    let bot_id = env::var("BOT_ID").context("Did not find envvar BOT_ID")?;
     let bot = Bot::new(bot_id);
-
-    let success = bot.send_message(readable_to_string(std::io::stdin()));
+    let message = match message {
+        Some(msg) => msg,
+        None => readable_to_string(stdin())?,
+    };
+    let success = bot.send_message(message); // FIXME: Result
 
     assert!(success);
+
+    Ok(())
 }
 
-fn readable_to_string<R: Read>(mut readable: R) -> String {
+fn readable_to_string<R: Read>(mut readable: R) -> Result<String> {
     let mut input_string = String::new();
 
-    if let Err(e) = readable.read_to_string(&mut input_string) {
-        panic!("Failed to read: {}", e);
-    }
+    readable.read_to_string(&mut input_string)?;
 
-    input_string
+    Ok(input_string)
 }

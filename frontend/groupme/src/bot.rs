@@ -1,11 +1,13 @@
+use std::borrow::Cow;
+
 use hyper::client::Client;
 use hyper::net::HttpsConnector;
 use hyper::status::StatusCode::Accepted;
 use hyper_native_tls::NativeTlsClient;
-use rustc_serialize::json;
-use std::borrow::Cow;
+use serde::Serialize;
+use serde_json::to_string;
 
-#[derive(RustcEncodable)]
+#[derive(Serialize)]
 struct SendMessageBody<'a> {
     bot_id: &'a str,
     text: &'a str,
@@ -22,7 +24,10 @@ impl<'a> Bot<'a> {
         }
     }
 
-    pub fn send_message<T>(&self, text: T) -> bool where T: Into<Cow<'a, str>> {
+    pub fn send_message<T>(&self, text: T) -> bool
+    where
+        T: Into<Cow<'a, str>>,
+    {
         let ssl = NativeTlsClient::new().unwrap();
         let connector = HttpsConnector::new(ssl);
         let client = Client::with_connector(connector);
@@ -31,9 +36,10 @@ impl<'a> Bot<'a> {
             text: &text.into(),
         };
 
-        println!{"{}", json::encode(&body).unwrap()}
+        dbg!(&to_string(&body).unwrap());
+
         let resp = client.post("https://api.groupme.com/v3/bots/post")
-            .body(&json::encode(&body).unwrap())
+            .body(&to_string(&body).unwrap())
             .send()
             .unwrap();
 
