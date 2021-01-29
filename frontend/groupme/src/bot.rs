@@ -1,5 +1,4 @@
-use std::borrow::Cow;
-
+use anyhow::Result;
 use hyper::client::Client;
 use hyper::net::HttpsConnector;
 use hyper::status::StatusCode::Accepted;
@@ -13,36 +12,33 @@ struct SendMessageBody<'a> {
     text: &'a str,
 }
 
-pub struct Bot<'a> {
-    id: Cow<'a, str>
+pub struct Bot<'s> {
+    id: &'s str,
 }
 
-impl<'a> Bot<'a> {
-    pub fn new<T>(id: T) -> Self where T: Into<Cow<'a, str>> {
+impl<'s> Bot<'s> {
+    pub fn new(id: &'s str) -> Self {
         Bot {
-            id: id.into(),
+            id,
         }
     }
 
-    pub fn send_message<T>(&self, text: T) -> bool
-    where
-        T: Into<Cow<'a, str>>,
-    {
-        let ssl = NativeTlsClient::new().unwrap();
+    pub fn send_message(&self, text: &'s str) -> Result<()> {
+        let ssl = NativeTlsClient::new()?;
         let connector = HttpsConnector::new(ssl);
         let client = Client::with_connector(connector);
         let body = SendMessageBody {
             bot_id: &self.id,
-            text: &text.into(),
+            text,
         };
 
-        dbg!(&to_string(&body).unwrap());
+        dbg!(&to_string(&body)?);
 
         let resp = client.post("https://api.groupme.com/v3/bots/post")
-            .body(&to_string(&body).unwrap())
-            .send()
-            .unwrap();
+            .body(&to_string(&body)?)
+            .send()?;
 
-        resp.status == Accepted
+        resp.status == Accepted;
+        Ok(())
     }
 }

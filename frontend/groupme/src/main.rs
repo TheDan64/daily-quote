@@ -7,20 +7,7 @@ use anyhow::{Context, Result};
 use dotenv::dotenv;
 use structopt::StructOpt;
 
-use self::bot::Bot;
-
-const USAGE: &str = "
-GroupMe Utilities
-
-Usage:
-  groupme bot send
-  groupme bot send <message>
-  groupme (-h | --help)
-  groupme --version
-
-Options:
-  -h --help     Show this screen.
-";
+use crate::bot::Bot;
 
 #[derive(Debug, StructOpt)]
 enum BotCmd {
@@ -41,8 +28,6 @@ enum Opt {
 fn main() -> Result<()> {
     let opt = Opt::from_args();
 
-    dbg!(&opt);
-
     dotenv().context("Failed to init dotenv")?;
 
     match opt {
@@ -54,14 +39,12 @@ fn main() -> Result<()> {
 
 fn send_bot_message(message: Option<String>) -> Result<()> {
     let bot_id = env::var("BOT_ID").context("Did not find envvar BOT_ID")?;
-    let bot = Bot::new(bot_id);
+    let bot = Bot::new(&bot_id);
     let message = match message {
         Some(msg) => msg,
         None => readable_to_string(stdin())?,
     };
-    let success = bot.send_message(message); // FIXME: Result
-
-    assert!(success);
+    bot.send_message(&message)?;
 
     Ok(())
 }
