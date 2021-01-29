@@ -25,26 +25,27 @@ enum Opt {
     Bot(BotCmd),
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     dotenv().context("Failed to init dotenv")?;
 
     match opt {
-        Opt::Bot(BotCmd::Send { message }) => send_bot_message(message)?,
+        Opt::Bot(BotCmd::Send { message }) => send_bot_message(message).await?,
     }
 
     Ok(())
 }
 
-fn send_bot_message(message: Option<String>) -> Result<()> {
+async fn send_bot_message(message: Option<String>) -> Result<()> {
     let bot_id = env::var("BOT_ID").context("Did not find envvar BOT_ID")?;
     let bot = Bot::new(&bot_id);
     let message = match message {
         Some(msg) => msg,
         None => readable_to_string(stdin())?,
     };
-    bot.send_message(&message)?;
+    bot.send_message(&message).await?;
 
     Ok(())
 }

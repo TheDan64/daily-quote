@@ -1,8 +1,5 @@
 use anyhow::Result;
-use hyper::client::Client;
-use hyper::net::HttpsConnector;
-use hyper::status::StatusCode::Accepted;
-use hyper_native_tls::NativeTlsClient;
+use reqwest::Client;
 use serde::Serialize;
 use serde_json::to_string;
 
@@ -13,32 +10,28 @@ struct SendMessageBody<'a> {
 }
 
 pub struct Bot<'s> {
+    client: Client,
     id: &'s str,
 }
 
 impl<'s> Bot<'s> {
     pub fn new(id: &'s str) -> Self {
         Bot {
+            client: Client::new(),
             id,
         }
     }
 
-    pub fn send_message(&self, text: &'s str) -> Result<()> {
-        let ssl = NativeTlsClient::new()?;
-        let connector = HttpsConnector::new(ssl);
-        let client = Client::with_connector(connector);
+    pub async fn send_message(&self, text: &'s str) -> Result<()> {
         let body = SendMessageBody {
             bot_id: &self.id,
             text,
         };
+        let _resp = self.client.post("https://api.groupme.com/v3/bots/post")
+            .body(to_string(&body)?)
+            .send()
+            .await?;
 
-        dbg!(&to_string(&body)?);
-
-        let resp = client.post("https://api.groupme.com/v3/bots/post")
-            .body(&to_string(&body)?)
-            .send()?;
-
-        resp.status == Accepted;
         Ok(())
     }
 }
