@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from dotenv import find_dotenv, load_dotenv
-from sh import echo, groupme, quote_storage
+from sh import discord, echo, groupme, quote_storage
 from typing import Tuple
 
 import os
@@ -40,3 +40,4 @@ if __name__ == "__main__":
         quote = "Throwback Thursday:\n\n" + quote
 
     groupme.bot.send(echo(quote))
+    discord.webhook.send(echo(quote))
