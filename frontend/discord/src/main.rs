@@ -4,22 +4,23 @@ use reqwest::Client;
 use serde::Serialize;
 use structopt::StructOpt;
 
-use std::env;
 use std::io::{stdin, Read};
 
 #[derive(Debug, StructOpt)]
 enum WebhookCmd {
     #[structopt(name = "send")]
     Send {
+        webhook_id: String,
+        webhook_token: String,
         message: Option<String>,
-    }
+    },
 }
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "discord")]
 enum Opt {
     #[structopt(name = "webhook")]
-    Webhook(WebhookCmd)
+    Webhook(WebhookCmd),
 }
 
 #[tokio::main]
@@ -29,7 +30,11 @@ async fn main() -> Result<()> {
     dotenv().context("Failed to init dotenv")?;
 
     match opt {
-        Opt::Webhook(WebhookCmd::Send { message }) => execute_webhook_message(message).await?,
+        Opt::Webhook(WebhookCmd::Send {
+            webhook_id,
+            webhook_token,
+            message,
+        }) => execute_webhook_message(&webhook_id, &webhook_token, message).await?,
     }
 
     Ok(())
@@ -42,25 +47,18 @@ struct ExecuteWebhookBody {
 }
 
 /// https://discord.com/developers/docs/resources/webhook#execute-webhook
-async fn execute_webhook_message(message: Option<String>) -> Result<()> {
-    let webhook_id = env::var("DISCORD_WEBHOOK_ID").context("Did not find envvar DISCORD_WEBHOOK_ID")?;
-    let webhook_token = env::var("DISCORD_WEBHOOK_TOKEN").context("Did not find envvar DISCORD_WEBHOOK_TOKEN")?;
+async fn execute_webhook_message(
+    webhook_id: &str,
+    webhook_token: &str,
+    message: Option<String>,
+) -> Result<()> {
     let message = match message {
         Some(msg) => msg,
         None => readable_to_string(stdin())?,
     };
-    let body = ExecuteWebhookBody {
-        content: message,
-    };
-    let endpoint = format!("https://discord.com/api/webhooks/{}/{}", webhook_id, webhook_token);
-
-    let response = Client::new()
-        .post(endpoint)
-        .json(&body)
-        .send()
-        .await?;
-
-    dbg!(response);
+    let body = ExecuteWebhookBody { content: message };
+    let endpoint = format!("https://discord.com/api/webhooks/{webhook_id}/{webhook_token}");
+    let _response = Client::new().post(endpoint).json(&body).send().await?;
 
     Ok(())
 }

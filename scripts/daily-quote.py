@@ -40,4 +40,11 @@ if __name__ == "__main__":
         quote = "Throwback Thursday:\n\n" + quote
 
     groupme.bot.send(echo(quote))
-    discord.webhook.send(echo(quote))
+
+    id = os.environ["DISCORD_WEBHOOK_ID_WARSHIP"]
+    token = os.environ["DISCORD_WEBHOOK_TOKEN_WARSHIP"]
+    discord.webhook.send(id, token, echo(quote))
+
+    id = os.environ["DISCORD_WEBHOOK_ID_MEGDAN"]
+    token = os.environ["DISCORD_WEBHOOK_TOKEN_MEGDAN"]
+    discord.webhook.send(id, token, echo(quote))

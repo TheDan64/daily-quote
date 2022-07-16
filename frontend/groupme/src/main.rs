@@ -45,7 +45,7 @@ async fn send_bot_message(message: Option<String>) -> Result<()> {
         Some(msg) => msg,
         None => readable_to_string(stdin())?,
     };
-    bot.send_message(&message).await?;
+    bot.send_message(&message).await.context("Failed to send message")?;
 
     Ok(())
 }
